@@ -1,0 +1,36 @@
+version: 0.1
+
+tools:
+  definitions:
+    - name: tach
+      runtime: python
+      package: tach
+      shims: [tach]
+      known_good_version: 0.35.0
+
+lint:
+  definitions:
+    - name: tach
+      files: [python]
+      description: Enforces module dependencies and interfaces (import-graph boundaries)
+      tools: [tach]
+      suggest_if: config_present
+      known_good_version: 0.35.0
+      direct_configs: [tach.toml]
+      affects_cache:
+        - tach.toml
+      commands:
+        - name: lint
+          output: regex
+          # tach checks the whole module graph in one pass and ignores any
+          # file arguments -- `batch: true` collapses Trunk's per-file
+          # invocation into a single `tach check` call regardless of how many
+          # Python files are in the diff (without it, Trunk runs the exact
+          # same whole-graph command once per matched file). Findings are
+          # written to stderr as `[FAIL] path:line: message`, not stdout.
+          run: tach check
+          success_codes: [0, 1]
+          parse_regex: "\\[FAIL\\] (?P<path>[^:]+):(?P<line>\\d+): (?P<message>.*)"
+          read_output_from: stderr
+          batch: true
+          cache_results: false
